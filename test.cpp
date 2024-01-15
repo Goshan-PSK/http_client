@@ -2,7 +2,10 @@
 #include <cstring>
 
 int main() {
-std::cout << "Hello World"<< std::endl;
+    std::cout << "Hello World" << std::endl;
 
-return 0;
+    if (true) {
+    }
+
+    return 0;
 }
