@@ -1,157 +1,122 @@
 #include <iostream>
-#include <cstring>
-#include <numeric>
-#include <random>
+#include <functional>
+#include <optional>
+#include <system_error>
+#include <string>
+#include <boost/asio.hpp>
+#include <dimon/http_client.hpp>
 
-#include <dimon/vector.hpp>
-#include <dimon/string.hpp>
-#include <dimon/list.hpp>
-#include <dimon/map.hpp>
+// class Client {
+// public:
+//     Client(boost::asio::io_context &io_context)
+//         : mSocket(io_context)
+//         , mResolver(io_context)
+//     {
+//     }
 
-using namespace my;
+// public:
+//     void open(std::function< void(std::error_code)> callBack) { // callback
+//         // resolve -> onResolve -> connect -> onConnect -> callback;
+//         mResolver.async_resolve(
+//             "example.com",
+//             "http",
+//             [this, callBack](const auto &eror, const auto &result) {
+//                 onResolve(eror, result, callBack);
+//         });
+//     }
+// private:
+//     void onResolve(
+//         const boost::system::error_code &ec,
+//         const boost::asio::ip::tcp::resolver::results_type &addrs,
+//         std::function< void(std::error_code)> callBack) {
+//         if (ec)
+//             return callBack(ec);
 
-template<typename T>
-auto& print_value(const T& value) {
-    std::cout << value;
-    return std::cout;
-}
+//         boost::asio::async_connect(
+//             mSocket,
+//             addrs,
+//             [this, callBack](const auto &ec, auto&&) { 
+//                 callBack(ec);
+//          });
+//     }
 
-template<typename L, typename R>
-auto& print_value(const std::pair<L, R> &value) {
-    std::cout << value.first << ":" << value.second;
-    return std::cout;
-}
+// private:
+//     boost::asio::ip::tcp::resolver mResolver;
+//     boost::asio::ip::tcp::socket mSocket;
+//     std::array< char, 1024 > buf;
+// };
 
-const auto print = [](auto &a, const auto where) {
-    std::cout << where << " size:" << a.size() << ' ';
-    if constexpr (requires { a.capacity(); })
-        std::cout << "cap:" << a.capacity() << ' ';
-
-    for (auto it = a.begin(); it != a.end(); ++it)
-        print_value(*it) << " ";
-    endl(std::cout);
-};
-
-
-int main() {
-    Vector< int > a;
-
-    for (int i = 0; i < 10; ++i)
-        a.push_back(i);
-
-    print(a, "Add 10 elements");
+// int main () {
+//     // boost::asio::io_context io_context;
+//     // boost::asio::ip::tcp::resolver resolver(io_context);
+//     // boost::asio::ip::tcp::resolver::results_type endpoints;
+//     // boost::asio::ip::tcp::socket socket(io_context);
     
-    for (int i = 0; i < 3; ++i)
-        a.pop_back();
-    
-    print(a, "After erasing 3 elements");
-
-    const auto afterErase = a.erase(a.begin() + 2);
-    
-    std::cout << "Erase returned: " << *afterErase << std::endl;
-    print(a, "After erase");
-
-    for(int i = 0; i < 16;++i) {
-        a.push_back(i+10);
-    }
-    print(a,"realocate");
-
-    std:: cout << "WORKING CLAASSS" << std::endl;
-    String f("XUY PIZDA ZALYPA");
-    
-    String x ("STROKA KOTORAYA PREBAVLENA");
-
-    std::cout << f + x << std::endl;
-    
-    std::cout <<"--------------------METOD FIND -------------------------------" << std::endl; 
-
-    std::cout << f.find('Z') << " | " << f.find('w') << " | " << f.find("ZALYPA") << std::endl;
-    
-    std::cout << "--------------------METOD SUBSTR AND INSERT -------------------------" << std::endl;
-
-    std::cout << f.substr(4,5) << " | " << f.insert(3," Her") << std::endl;
-
-    std::cout
-        << (String ("aaa") < String ("aaaa")) << ' '
-        << (String ("aasssa") < String ("aaaa")) << ' '
-        << (String ("aaa") == String ("aaa")) << ' '
-        << (String ("aaa") > String ("aaaa")) << ' '
-        << (String ("aaaa") > String ("aaa")) << ' '
-        << (String ("aaa") != String ("aaa")) << ' '
-        << std::endl;
-
-    std::cout << "HACHAL TEST LISTA ---------" << std::endl;
-
-    LinkedList l;
-    for (int i = 5; i < 10; ++i) {
-        l.push_back(i);
-    }
-    print(l, "push_back");
-    for (int i = 4; i >= 0; --i) {
-        l.push_front(i);
-    }
-    print(l, "push_front");
-
-    LinkedList::iterator five = std::find(l.begin(), l.end(), 5);
-
-    const auto six = l.erase(five);
-    print(l, std::string("Posle ERASE ") + std::to_string(*six));
-
-    for (auto it = l.begin(); it != l.end(); ) {
-        if (*it % 2 != 0) {
-            it = l.erase(it);
-        }
-        else {
-            ++it;
-        }
-    }
-    
-    print(l,"TOLKO chetnie");
-
-    for (auto it = l.begin(); it != l.end(); ) {
-        if (*it % 2 == 0) {
-            auto value = *it + 1;
-            l.insert(++it, value);
+//     // resolver.async_resolve("example.com", "http", [&](const auto ec, const auto &endpoints){
+//     //     std::cout << "resolve" << std::endl;
+//     //     boost::asio::async_connect(socket, endpoints, [&](const auto &ec, const auto endpont) {
+//     //         std::cout<< "connected" << std::endl;
+//     //         boost::system::error_code eror;
+//     //         std::string stroka = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
             
-        }
-        else {
-            ++it;
-        }
-    }
-    print(l,"comeback");
-
-    LinkedList newL(l);
-    print(newL,"newL");
-
-    l.clear();
-    newL = l;
-    print(newL,"after clear");
-
-    std::cout<< "TESTIIIIIIIIIIIIIM MAAAAAAAAAAAAAP ELI PALI---------------" << std::endl;
-
-    Map map;
-    // auto keys = std::array{"Xyu", "Pizda", "Zalypa"};
-    // for (int i = 0; i < keys.size(); i++) {
-    //     map[keys[i]] = i + 1;
-    //     std::cout << "insert " << keys[i]  << ":" << map.count(keys[i]) << std::endl;
-    // }
-    // for (const char* key : keys) {
-    //     std::cout << key << "=" << map[key] << std::endl;
-    // }
-
-    // auto numbers = std::vector< int >(19, int());
-    // std::iota(numbers.begin(), numbers.end(), 0);
-    // std::random_device rd;
-    // std::mt19937 g(rd());
-    // std::shuffle(numbers.begin(), numbers.end(), g);
-
-   map[11], map[7], map[6], map[9], map[8], map[10];
-
-    print(map,"MAp");
-
-    map.erase(6);
-    print(map,"Posle Erase");
-  
+//     //         socket.async_send(boost::asio::buffer(stroka), [this](const auto &ec, const auto sz) {
+//     //             std::cout<< "SEND" << std::endl;
+//     //             std::array< char, 1024 > buf;
+//     //             size_t len = socket.async_read(boost::asio::buffer(buf), [&](const auto &ec, const auto sz) {
+//     //                 std::cout<< "READ" << std::endl;
+//     //                 std::cout.write(buf.data(), len);
+//     //                 std::cout<<std::endl; 
+//     //             });
+//     //         });
+//     //     });
+//     // });
     
+//     // io_context.run();
+// struct S {
+
+// };
+int main () {
+
+    // const auto request = Request{
+    //     .method = Method::GET,
+    //     .target = "/",
+    //     .headers = //...
+    //     .body = "",
+    // };
+    my::Request r;
+
+    r.method = my::Method::get;
+    r.headers["Host"] = "example.com";
+    // r.body = "SOSI PIZDU";
+    r.target = "/";
+
+    boost::asio::io_context ioc;
+
+
+    my::makeSesion(ioc, my::Url("example.com"),[r](std::error_code error, std::shared_ptr<my::Sesion> ses) {
+        if (error) {
+            std::cout << error << error.message() << std::endl;
+            return;
+        }
+        ses->write(r, [ses, r](std::error_code er,my::Response resp){
+            // ses->write(r, [](std::error_code er, my::Response respon){
+            //     std::cout << respon.body << std::endl;
+            // });
+            std::cout << resp.body << std::endl;
+        });
+    });
+
+    // a.open("example.com",[&a, r](std::error_code ec){
+    //     std::cout << "Connection : " << ec.message() << std::endl;
+    //     a.send(r, [](const auto eror, const auto response){
+    //         for (const auto[key, value] : response.headers) {
+    //             std::cout << key << " : " << value << std::endl;
+    //         }
+    //         std::cout << "BODY = " <<response.body << std::endl << "status = " << response.status <<std::endl;
+    //     });
+    // });
+
+    ioc.run();
+
     return 0;
 }

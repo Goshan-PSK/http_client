@@ -120,11 +120,10 @@ public:
 
         repr_type maskR = mData[byte_number] >> (bit_number + 1);
         repr_type maskL = mData[byte_number] << (repr_bits - bit_number);
-        maskR = maskR << (byte_number + 1);
-        maskL = maskL >> (repr_bits - bit_number - 1);
+        maskR = maskR << (bit_number);
+        maskL = maskL >> (repr_bits - bit_number);
 
-        mData[byte_number] = maskR & maskL;
-
+        mData[byte_number] = maskR | maskL;
         size_t size;
         if (mSize % repr_bits == 0) {
             size = mSize / repr_bits;
@@ -133,17 +132,65 @@ public:
             size = mSize / repr_bits + 1;
         }
 
-        for (size_t i = byte_number + 1; i != size; ++i){
-            repr_type GreatestBit = mData[i] & (1 << bigBit);
-            mData[i-1] |= GreatestBit >> bigBit;
-            mData[i] <<= 1;
+        for (size_t i = byte_number + 1; i < size; ++i){
+            repr_type GreatestBit = mData[i] & 1;
+            int tmp = int(mData[i-1]);
+            mData[i-1] |= GreatestBit << bigBit;
+            mData[i] >>= 1;
         }
-
+        mSize--;
         return it;
     }
 
+    iterator insert(iterator it, const value_type value) {
+        if (mSize == mCapacity) {
+            mCapacity += 16 * repr_bits;
+            repr_type * const newData = new repr_type[mCapacity / repr_bits];
+            std::copy(mData, mData + mSize / repr_bits, newData);
+            delete [] mData;
+            mData = newData;
+        }
+
+        const size_t byte_number = it.mBitNumber / repr_bits;
+        const size_t bit_number = it.mBitNumber % repr_bits;
+        size_t bigBit = repr_bits - 1;
+
+        mSize++;
+        size_t size;
+        if (mSize % repr_bits == 0) {
+            size = mSize / repr_bits;
+        }
+        else {
+            size = mSize / repr_bits + 1;
+        }
+
+        repr_type mask = 1 << bigBit;
+        for (size_t i = size - 1; i > byte_number; --i) {
+            repr_type GreatestBit = mData[i-1] & mask;
+            mData[i] <<= 1;
+            mData[i] |= (GreatestBit >> bigBit);
+        }
+
+        repr_type maskOne = ~(1 << bit_number);
+        repr_type maskTwo = (mData[byte_number] >> bit_number) & value;
+
+        maskTwo = maskTwo << bit_number;
+        repr_type maskR = mData[byte_number] >> bit_number;
+        repr_type maskL = mData[byte_number] << (repr_bits - bit_number);
+        maskR = maskR << (bit_number + 1);
+        maskL = maskL >> (repr_bits - bit_number);
+
+        maskR = maskR & maskOne;
+
+        mData[byte_number] = (maskR | maskL) | maskTwo;
+
+        iterator result = iterator(mData, it.mBitNumber);
+        return result;
+    }
+
+
     reference operator[](size_type bit_number) {
-        return reference(mData[mSize / repr_bits], mSize % repr_bits);
+        return reference(mData[bit_number / repr_bits], bit_number % repr_bits);
     }
 
     iterator begin() {
@@ -157,8 +204,9 @@ public:
         return mSize;
     }
     size_type capacity() const {
-    return mCapacity;
+        return mCapacity;
     }
+
 private:
 
     size_type mSize{0};

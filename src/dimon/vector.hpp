@@ -56,3 +56,4 @@ private:
 } // namespace my
 
 #include "vector_impl.hpp"
+#include "bit_vector.hpp"
